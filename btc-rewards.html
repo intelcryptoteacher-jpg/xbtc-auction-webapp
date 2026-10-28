@@ -20,6 +20,7 @@ input,textarea,select,button{width:100%;padding:13px;border-radius:10px;border:1
 <div class="grid"><button id="signin">Sign in</button><button class="secondary" id="signup">Create account</button></div>
 <button class="secondary" id="anonymous">Continue anonymously</button>
 <p class="muted">Anonymous access creates a guest session without an email or password. Guest rewards remain tied to this browser session/account; add a recovery method later if you need to keep access.</p>
+<p id="auth-help" class="muted"></p>
 <p id="message" class="muted" role="status">Use an account you control. Never share your password or wallet recovery phrase.</p>
 </section>
 <section class="hidden" id="dashboard">
@@ -99,7 +100,22 @@ async function runAuthAction(buttonId, label, action) {
   if(result?.error) throw result.error;
   return result;
  } catch(e) {
-  message(label.replace(/…$/, '')+' failed: '+errorText(e));
+  const authHelp=el('auth-help');
+  if(authHelp) authHelp.replaceChildren();
+  const code=e?.code||e?.error_code||'';
+  const anonymousDisabled=code==='anonymous_provider_disabled'||/anonymous sign-ins are disabled/i.test(errorText(e));
+  if(anonymousDisabled) {
+   message('Guest sign-in is disabled in the Supabase backend (anonymous_provider_disabled). The app code is reaching the correct project, but Supabase is rejecting the request.');
+   if(authHelp) {
+    authHelp.append(document.createTextNode('To enable guest access: open Supabase Authentication → Sign In / Providers, enable Anonymous Sign-Ins, then save. '));
+    const link=document.createElement('a');
+    link.href='https://supabase.com/dashboard/project/foaxqdjfwnmipitcnnnn/auth/providers';
+    link.target='_blank'; link.rel='noopener noreferrer'; link.textContent='Open this project’s authentication settings';
+    authHelp.append(link);
+   }
+  } else {
+   message(label.replace(/…$/, '')+' failed: '+errorText(e));
+  }
   return null;
  } finally { button.disabled=false; }
 }
