@@ -82,10 +82,10 @@ function showWithdrawForm(reward,card){
 }
 async function loadWithdrawals(){
  const host=el('withdrawals');host.replaceChildren(node('p','Loading requests…','muted'));const {data:{user}}=await supabase.auth.getUser();
- const {data,error}=await supabase.from('btc_withdrawals').select('id,amount_sats,destination_type,status,requested_at,review_note,transaction_reference').eq('user_id',user.id).order('requested_at',{ascending:false}).limit(30);
+ const {data,error}=await supabase.from('btc_withdrawals').select('id,amount_sats,destination_type,status,requested_at,review_note,payout_reference').eq('user_id',user.id).order('requested_at',{ascending:false}).limit(30);
  host.replaceChildren();if(error){host.append(node('p','Could not load withdrawal requests: '+error.message,'muted'));return}
  if(!data?.length){host.append(node('p','No withdrawal requests yet.','muted'));return}
- for(const w of data){const c=node('article',undefined,'task');c.append(node('strong',sats(w.amount_sats)+' · '+(w.status||'unknown').replaceAll('_',' ')),node('p',(w.destination_type||'payout')+' · '+new Date(w.requested_at).toLocaleString(),'muted'));if(w.review_note)c.append(node('p','Review note: '+w.review_note,'muted'));if(w.transaction_reference)c.append(node('p','Transaction: '+w.transaction_reference,'muted'));host.append(c)}
+ for(const w of data){const c=node('article',undefined,'task');c.append(node('strong',sats(w.amount_sats)+' · '+(w.status||'unknown').replaceAll('_',' ')),node('p',(w.destination_type||'payout')+' · '+new Date(w.requested_at).toLocaleString(),'muted'));if(w.review_note)c.append(node('p','Review note: '+w.review_note,'muted'));if(w.payout_reference)c.append(node('p','Payout reference: '+w.payout_reference,'muted'));host.append(c)}
 }
 el('signin').onclick=async()=>{message('Signing in…');const{error}=await supabase.auth.signInWithPassword({email:el('email').value.trim(),password:el('password').value});if(error){message(error.message);return}message('Signed in.');await refresh()};
 el('signup').onclick=async()=>{message('Creating account…');const{data,error}=await supabase.auth.signUp({email:el('email').value.trim(),password:el('password').value});if(error){message(error.message);return}message(data.session?'Account created.':'Account created. Check your email for a confirmation link, then sign in.');await refresh()};
