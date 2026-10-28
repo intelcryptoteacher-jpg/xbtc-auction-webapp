@@ -23,6 +23,32 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Validate BTC Rewards app before deployment
+        shell: bash
+        run: |
+          test -s index.html
+          test -s btc-rewards.html
+          node <<'NODE'
+          const fs = require('node:fs');
+          const html = fs.readFileSync('btc-rewards.html', 'utf8');
+          const required = [
+            'id="anonymous"', 'id="signin"', 'id="signup"',
+            'id="dashboard"', 'id="overview"', 'id="tasks-panel"',
+            'id="rewards-panel"', 'id="withdrawals-panel"',
+            "signInAnonymously()", "btc-submit-task",
+            "btc-request-withdrawal"
+          ];
+          const missing = required.filter(item => !html.includes(item));
+          const tabs = [...html.matchAll(/data-tab="([^"]+)"/g)].map(m => m[1]);
+          const panels = new Set([...html.matchAll(/id="([^"]+-panel|overview)"/g)].map(m => m[1]));
+          const brokenTabs = tabs.filter(id => !panels.has(id));
+          if (missing.length || brokenTabs.length) {
+            console.error('Missing required app features:', missing);
+            console.error('Tabs without matching panels:', brokenTabs);
+            process.exit(1);
+          }
+          console.log('BTC Rewards validation passed: guest sign-in, task/reward/withdrawal UI, and all tab targets are present.');
+          NODE
       - name: Configure Pages
         uses: actions/configure-pages@v5
       - name: Upload site
