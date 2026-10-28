@@ -18,6 +18,8 @@ input,textarea,select,button{width:100%;padding:13px;border-radius:10px;border:1
 <label for="email">Email</label><input id="email" type="email" autocomplete="email" placeholder="you@example.com">
 <label for="password">Password</label><input id="password" type="password" autocomplete="current-password" placeholder="At least 6 characters">
 <div class="grid"><button id="signin">Sign in</button><button class="secondary" id="signup">Create account</button></div>
+<button class="secondary" id="anonymous">Continue anonymously</button>
+<p class="muted">Anonymous access creates a guest session without an email or password. Guest rewards remain tied to this browser session/account; add a recovery method later if you need to keep access.</p>
 <p id="message" class="muted" role="status">Use an account you control. Never share your password or wallet recovery phrase.</p>
 </section>
 <section class="hidden" id="dashboard">
@@ -87,6 +89,7 @@ async function loadWithdrawals(){
  if(!data?.length){host.append(node('p','No withdrawal requests yet.','muted'));return}
  for(const w of data){const c=node('article',undefined,'task');c.append(node('strong',sats(w.amount_sats)+' · '+(w.status||'unknown').replaceAll('_',' ')),node('p',(w.destination_type||'payout')+' · '+new Date(w.requested_at).toLocaleString(),'muted'));if(w.review_note)c.append(node('p','Review note: '+w.review_note,'muted'));if(w.payout_reference)c.append(node('p','Payout reference: '+w.payout_reference,'muted'));host.append(c)}
 }
+el('anonymous').onclick=async()=>{const b=el('anonymous');b.disabled=true;message('Starting anonymous guest session…');try{const{data,error}=await supabase.auth.signInAnonymously();if(error)throw error;if(!data.session)throw new Error('No guest session was created.');message('Guest session ready.');await refresh()}catch(e){message('Anonymous sign-in failed: '+errorText(e)+'. Anonymous sign-in may need to be enabled in Supabase Authentication settings.')}finally{b.disabled=false}};
 el('signin').onclick=async()=>{message('Signing in…');const{error}=await supabase.auth.signInWithPassword({email:el('email').value.trim(),password:el('password').value});if(error){message(error.message);return}message('Signed in.');await refresh()};
 el('signup').onclick=async()=>{message('Creating account…');const{data,error}=await supabase.auth.signUp({email:el('email').value.trim(),password:el('password').value});if(error){message(error.message);return}message(data.session?'Account created.':'Account created. Check your email for a confirmation link, then sign in.');await refresh()};
 el('signout').onclick=async()=>{await supabase.auth.signOut();await refresh()};
