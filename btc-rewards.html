@@ -2,59 +2,95 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>BTC Rewards</title>
+<meta name="theme-color" content="#0c1016"><title>BTC Rewards</title>
 <style>
-:root{color-scheme:dark;--orange:#f7931a;--bg:#0c1016;--panel:#171d26;--muted:#a0abba;--line:#293342}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:#f4f6fa;font:16px system-ui,-apple-system,Segoe UI,sans-serif;padding:20px}
-main{max-width:760px;margin:4vh auto}.brand{color:var(--orange);font-size:2rem;font-weight:800;margin:0}.sub{color:var(--muted);margin-top:4px}
-.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:20px;margin-top:18px}
-input,button{width:100%;padding:13px;border-radius:10px;border:1px solid var(--line);margin:6px 0;background:#0c1016;color:#fff;font:inherit}
-button{background:var(--orange);color:#151515;font-weight:750;border:0;cursor:pointer}button.secondary{background:#293342;color:#fff}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px}.muted{color:var(--muted)}.hidden{display:none}.task{padding:14px;border:1px solid var(--line);border-radius:12px;margin-top:10px}
-small{color:var(--muted)}#message{overflow-wrap:anywhere}
+:root{color-scheme:dark;--orange:#f7931a;--bg:#0c1016;--panel:#171d26;--muted:#a0abba;--line:#293342;--good:#63d6a2}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:#f4f6fa;font:16px system-ui,-apple-system,Segoe UI,sans-serif;padding:16px}
+main{max-width:860px;margin:3vh auto}.brand{color:var(--orange);font-size:clamp(1.8rem,5vw,2.4rem);font-weight:850;margin:0}.sub,.muted,small{color:var(--muted)}.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:18px;margin-top:16px}
+input,textarea,select,button{width:100%;padding:13px;border-radius:10px;border:1px solid var(--line);margin:6px 0;background:#0c1016;color:#fff;font:inherit}textarea{min-height:100px;resize:vertical}button{background:var(--orange);color:#151515;font-weight:750;border:0;cursor:pointer}button.secondary{background:#293342;color:#fff}button:disabled{opacity:.55;cursor:wait}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:12px}.hidden{display:none}.task{padding:14px;border:1px solid var(--line);border-radius:12px;margin-top:10px}.task h3{margin:0 0 8px}.pill{display:inline-block;padding:4px 9px;border-radius:99px;background:#263244;color:#d9e4f4;font-size:.82rem}.stat{font-size:1.5rem;font-weight:800;color:var(--orange)}#message{overflow-wrap:anywhere;white-space:pre-wrap}.notice{border-left:3px solid var(--orange);padding:10px 12px;background:#211d17;border-radius:5px}.task button{margin-top:12px}.section-title{margin-bottom:8px}
 </style>
 </head>
 <body><main>
-<header><h1 class="brand">₿ BTC Rewards</h1><div class="sub">Complete tasks • Track satoshi rewards • Request withdrawals</div></header>
+<header><h1 class="brand">₿ BTC Rewards</h1><p class="sub">Complete tasks · submit evidence · track rewards · request withdrawals</p></header>
 <section class="card" id="auth">
 <h2>Welcome</h2><p class="muted">Sign in or create an account to access your rewards.</p>
 <label for="email">Email</label><input id="email" type="email" autocomplete="email" placeholder="you@example.com">
 <label for="password">Password</label><input id="password" type="password" autocomplete="current-password" placeholder="At least 6 characters">
 <div class="grid"><button id="signin">Sign in</button><button class="secondary" id="signup">Create account</button></div>
-<p id="message" class="muted" role="status">Your account is protected by Supabase authentication.</p>
+<p id="message" class="muted" role="status">Use an account you control. Never share your password or wallet recovery phrase.</p>
 </section>
-<section class="card hidden" id="dashboard">
-<div class="grid"><div><h2>Rewards dashboard</h2><p id="who" class="muted"></p></div><div><button class="secondary" id="signout">Sign out</button></div></div>
-<h3>Available tasks</h3><div id="tasks" class="muted">Loading tasks…</div>
-<p class="muted">Reward balances and withdrawals are subject to review. This website does not send Bitcoin automatically; withdrawal requests require manual processing.</p>
+<section class="hidden" id="dashboard">
+<section class="card"><div class="grid"><div><h2 class="section-title">Your dashboard</h2><p id="who" class="muted"></p></div><div><button class="secondary" id="signout">Sign out</button></div></div>
+<div class="grid"><div><p class="muted">Available rewards</p><div class="stat" id="balance">— sats</div></div><div><p class="muted">Pending review</p><div class="stat" id="pending">—</div></div></div>
+<p id="dashmessage" class="muted" role="status"></p></section>
+<section class="card"><h2>Available tasks</h2><p class="muted">Open a task, follow its instructions, and submit evidence for review.</p><div id="tasks">Loading tasks…</div></section>
+<section class="card"><h2>Your reward history</h2><div id="rewards" class="muted">Loading rewards…</div></section>
+<section class="card"><h2>Withdrawal requests</h2><p class="muted">Choose an available reward below to request a Bitcoin payout review.</p><div id="withdrawals" class="muted">Loading requests…</div></section>
 </section>
-<footer><p><small>BTC Rewards • Secure account access • Never share your password or wallet recovery phrase.</small></p></footer>
+<footer><p><small>BTC Rewards · Withdrawals require manual review. This app does not automatically sign or broadcast Bitcoin transactions. Never pay a fee to “unlock” a reward.</small></p></footer>
 </main>
 <script type="module">
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.0';
-const supabase = createClient('https://foaxqdjfwnmipitcnnnn.supabase.co','sb_publishable_fHDNGd_OrZEF9uPMlU8yWw_yLJbkxrE');
-const el=id=>document.getElementById(id);
-function msg(t){el('message').textContent=t}
+const supabase=createClient('https://foaxqdjfwnmipitcnnnn.supabase.co','sb_publishable_fHDNGd_OrZEF9uPMlU8yWw_yLJbkxrE');
+const el=id=>document.getElementById(id); let busy=false;
+function message(t){el('message').textContent=t}
+function node(tag,text,cls){const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(cls)n.className=cls;return n}
+function sats(n){return Number(n||0).toLocaleString()+' sats'}
+function errorText(e){return e?.message||e?.error||String(e||'Unknown error')}
+async function invoke(name,body){const {data:{session}}=await supabase.auth.getSession();if(!session)throw new Error('Please sign in again.');const {data,error}=await supabase.functions.invoke(name,{body});if(error)throw error;if(data?.error)throw new Error(data.error.replaceAll('_',' '));return data}
 async function refresh(){
  const {data:{session}}=await supabase.auth.getSession();
  el('auth').classList.toggle('hidden',!!session);el('dashboard').classList.toggle('hidden',!session);
  if(!session)return;
- el('who').textContent='Signed in as '+session.user.email;
- const {data,error}=await supabase.from('btc_tasks').select('*').eq('status','open').order('created_at',{ascending:false}).limit(30);
- const host=el('tasks');host.replaceChildren();
- if(error){host.textContent='Could not load tasks: '+error.message;return}
- if(!data?.length){host.textContent='No open tasks are available right now.';return}
+ el('who').textContent='Signed in as '+(session.user.email||'your account');
+ await Promise.all([loadTasks(),loadRewards(),loadWithdrawals()]);
+}
+async function loadTasks(){
+ const host=el('tasks');host.replaceChildren(node('p','Loading tasks…','muted'));
+ const {data,error}=await supabase.from('btc_tasks').select('id,title,description,reward_sats,evidence_requirements,status').eq('status','open').order('created_at',{ascending:false}).limit(30);
+ host.replaceChildren();if(error){host.append(node('p','Could not load tasks: '+error.message,'muted'));return}
+ if(!data?.length){host.append(node('p','No open tasks are available right now. Please check back later.','muted'));return}
  for(const task of data){
-  const card=document.createElement('article');card.className='task';
-  const title=document.createElement('h4');title.textContent=task.title||task.name||'Reward task';
-  const desc=document.createElement('p');desc.className='muted';desc.textContent=task.description||task.instructions||'Review task instructions before submitting.';
-  const reward=document.createElement('p');reward.textContent='Reward: '+(task.reward_sats??'—')+' sats';
-  card.append(title,desc,reward);host.append(card);
+  const card=node('article',undefined,'task');card.append(node('span','OPEN','pill'),node('h3',task.title||'Reward task'),node('p',task.description||'Follow the instructions and submit evidence.','muted'),node('p','Reward: '+sats(task.reward_sats)));
+  const form=node('form');const label=node('label','Evidence / proof (required)');const evidence=node('textarea');evidence.required=true;evidence.maxLength=15000;evidence.placeholder='Describe what you completed and include relevant proof or a link. Do not paste passwords or recovery phrases.';
+  const submit=node('button','Submit task for review');submit.type='submit';form.append(label,evidence,submit);
+  form.onsubmit=async ev=>{ev.preventDefault();submit.disabled=true;try{await invoke('btc-submit-task',{task_id:task.id,evidence:{text:evidence.value.trim()}});evidence.value='';el('dashmessage').textContent='Task submitted. It is now awaiting review.';await refresh()}catch(e){el('dashmessage').textContent='Submission failed: '+errorText(e)}finally{submit.disabled=false}};
+  card.append(form);host.append(card)
  }
 }
-el('signin').onclick=async()=>{const{error}=await supabase.auth.signInWithPassword({email:el('email').value.trim(),password:el('password').value});if(error){msg(error.message);return}await refresh()};
-el('signup').onclick=async()=>{const{data,error}=await supabase.auth.signUp({email:el('email').value.trim(),password:el('password').value});if(error){msg(error.message);return}msg(data.session?'Account created. Loading your dashboard…':'Account created. Check your email for a confirmation link.');await refresh()};
+async function loadRewards(){
+ const host=el('rewards');host.replaceChildren(node('p','Loading rewards…','muted'));
+ const {data:{user}}=await supabase.auth.getUser();
+ const {data,error}=await supabase.from('btc_rewards').select('id,amount_sats,reason,status,created_at,paid_at,payout_reference').eq('user_id',user.id).order('created_at',{ascending:false}).limit(50);
+ host.replaceChildren();if(error){host.append(node('p','Could not load rewards: '+error.message,'muted'));el('balance').textContent='Unavailable';el('pending').textContent='Unavailable';return}
+ const available=(data||[]).filter(x=>x.status==='available').reduce((a,x)=>a+Number(x.amount_sats||0),0);
+ const pend=(data||[]).filter(x=>['pending','reserved'].includes(x.status)).length;
+ el('balance').textContent=sats(available);el('pending').textContent=String(pend);
+ if(!data?.length){host.append(node('p','No rewards recorded yet. Approved task submissions can create reward entries.','muted'));return}
+ for(const r of data){const card=node('article',undefined,'task');card.append(node('strong',sats(r.amount_sats)+' · '+(r.status||'unknown').replaceAll('_',' ')),node('p',r.reason||'Task reward','muted'),node('small',new Date(r.created_at).toLocaleString()));
+  if(r.status==='available'){const b=node('button','Request withdrawal');b.onclick=()=>showWithdrawForm(r,card);card.append(b)}
+  if(r.payout_reference)card.append(node('p','Payout reference: '+r.payout_reference,'muted'));host.append(card)}
+}
+function showWithdrawForm(reward,card){
+ if(card.querySelector('form'))return;
+ const form=node('form');const type=node('select');type.append(new Option('Bitcoin on-chain address','onchain'),new Option('Lightning address / invoice','lightning'));
+ const destination=node('textarea');destination.required=true;destination.maxLength=2000;destination.placeholder='Enter your Bitcoin address or Lightning destination';
+ const b=node('button','Submit withdrawal request');b.type='submit';form.append(node('label','Payout method'),type,node('label','Destination'),destination,b);
+ form.onsubmit=async ev=>{ev.preventDefault();if(!confirm('Submit a manual-review withdrawal request for '+sats(reward.amount_sats)+'? Check the destination carefully.'))return;b.disabled=true;try{await invoke('btc-request-withdrawal',{reward_id:reward.id,destination:destination.value.trim(),destination_type:type.value,idempotency_key:crypto.randomUUID()});el('dashmessage').textContent='Withdrawal request submitted for manual review. No Bitcoin has been sent yet.';await refresh()}catch(e){el('dashmessage').textContent='Withdrawal request failed: '+errorText(e);b.disabled=false}};
+ card.append(form)
+}
+async function loadWithdrawals(){
+ const host=el('withdrawals');host.replaceChildren(node('p','Loading requests…','muted'));const {data:{user}}=await supabase.auth.getUser();
+ const {data,error}=await supabase.from('btc_withdrawals').select('id,amount_sats,destination_type,status,requested_at,review_note,transaction_reference').eq('user_id',user.id).order('requested_at',{ascending:false}).limit(30);
+ host.replaceChildren();if(error){host.append(node('p','Could not load withdrawal requests: '+error.message,'muted'));return}
+ if(!data?.length){host.append(node('p','No withdrawal requests yet.','muted'));return}
+ for(const w of data){const c=node('article',undefined,'task');c.append(node('strong',sats(w.amount_sats)+' · '+(w.status||'unknown').replaceAll('_',' ')),node('p',(w.destination_type||'payout')+' · '+new Date(w.requested_at).toLocaleString(),'muted'));if(w.review_note)c.append(node('p','Review note: '+w.review_note,'muted'));if(w.transaction_reference)c.append(node('p','Transaction: '+w.transaction_reference,'muted'));host.append(c)}
+}
+el('signin').onclick=async()=>{message('Signing in…');const{error}=await supabase.auth.signInWithPassword({email:el('email').value.trim(),password:el('password').value});if(error){message(error.message);return}message('Signed in.');await refresh()};
+el('signup').onclick=async()=>{message('Creating account…');const{data,error}=await supabase.auth.signUp({email:el('email').value.trim(),password:el('password').value});if(error){message(error.message);return}message(data.session?'Account created.':'Account created. Check your email for a confirmation link, then sign in.');await refresh()};
 el('signout').onclick=async()=>{await supabase.auth.signOut();await refresh()};
-supabase.auth.onAuthStateChange(()=>{setTimeout(refresh,0)});refresh();
+supabase.auth.onAuthStateChange(()=>{setTimeout(()=>refresh().catch(e=>el('dashmessage').textContent=errorText(e)),0)});
+refresh().catch(e=>message('App could not start: '+errorText(e)));
 </script>
 </body></html>
