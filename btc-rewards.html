@@ -19,9 +19,9 @@ input,textarea,select,button{width:100%;padding:13px;border-radius:10px;border:1
 <label for="password">Password</label><input id="password" type="password" autocomplete="current-password" placeholder="At least 6 characters">
 <div class="grid"><button id="signin">Sign in</button><button class="secondary" id="signup">Create account</button></div>
 <button class="secondary" id="anonymous">Continue anonymously</button>
-<p class="muted">Anonymous access creates a guest session without an email or password. Guest rewards remain tied to this browser session/account; add a recovery method later if you need to keep access.</p>
+<p id="message" class="notice" role="status" aria-live="polite">Use an account you control. Never share your password or wallet recovery phrase.</p>
 <p id="auth-help" class="muted"></p>
-<p id="message" class="muted" role="status">Use an account you control. Never share your password or wallet recovery phrase.</p>
+<p class="muted">Anonymous access creates a guest session without an email or password. Guest rewards remain tied to this browser session/account; add a recovery method later if you need to keep access.</p>
 </section>
 <section class="hidden" id="dashboard">
 <nav class="tabbar" aria-label="App navigation"><button type="button" class="active" data-tab="overview">Home</button><button type="button" data-tab="tasks-panel">Tasks</button><button type="button" data-tab="rewards-panel">Rewards</button><button type="button" data-tab="withdrawals-panel">Withdraw</button></nav>
@@ -38,7 +38,7 @@ input,textarea,select,button{width:100%;padding:13px;border-radius:10px;border:1
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.0';
 const supabase=createClient('https://foaxqdjfwnmipitcnnnn.supabase.co','sb_publishable_fHDNGd_OrZEF9uPMlU8yWw_yLJbkxrE');
 const el=id=>document.getElementById(id); let busy=false;
-function message(t){el('message').textContent=t}
+function message(t){el('message').textContent=t;el('message').scrollIntoView({block:'nearest',behavior:'smooth'})}
 function showTab(id){document.querySelectorAll('.tab-panel').forEach(p=>p.classList.toggle('active',p.id===id));document.querySelectorAll('[data-tab]').forEach(b=>b.classList.toggle('active',b.dataset.tab===id));}
 document.querySelectorAll('[data-tab]').forEach(b=>b.addEventListener('click',()=>showTab(b.dataset.tab)));
 function node(tag,text,cls){const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(cls)n.className=cls;return n}
