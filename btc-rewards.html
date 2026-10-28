@@ -8,7 +8,7 @@
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:#f4f6fa;font:16px system-ui,-apple-system,Segoe UI,sans-serif;padding:16px}
 main{max-width:860px;margin:3vh auto}.brand{color:var(--orange);font-size:clamp(1.8rem,5vw,2.4rem);font-weight:850;margin:0}.sub,.muted,small{color:var(--muted)}.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:18px;margin-top:16px}
 input,textarea,select,button{width:100%;padding:13px;border-radius:10px;border:1px solid var(--line);margin:6px 0;background:#0c1016;color:#fff;font:inherit}textarea{min-height:100px;resize:vertical}button{background:var(--orange);color:#151515;font-weight:750;border:0;cursor:pointer}button.secondary{background:#293342;color:#fff}button:disabled{opacity:.55;cursor:wait}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:12px}.hidden{display:none}.task{padding:14px;border:1px solid var(--line);border-radius:12px;margin-top:10px}.task h3{margin:0 0 8px}.pill{display:inline-block;padding:4px 9px;border-radius:99px;background:#263244;color:#d9e4f4;font-size:.82rem}.stat{font-size:1.5rem;font-weight:800;color:var(--orange)}#message{overflow-wrap:anywhere;white-space:pre-wrap}.notice{border-left:3px solid var(--orange);padding:10px 12px;background:#211d17;border-radius:5px}.task button{margin-top:12px}.section-title{margin-bottom:8px}
+.tabbar{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:16px;position:sticky;top:0;z-index:5;background:var(--bg);padding:8px 0}.tabbar button{margin:0;padding:10px 5px;font-size:.9rem}.tabbar button.active{outline:2px solid var(--orange);background:#ffd08a}.tab-panel{display:none}.tab-panel.active{display:block}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:12px}.hidden{display:none}.task{padding:14px;border:1px solid var(--line);border-radius:12px;margin-top:10px}.task h3{margin:0 0 8px}.pill{display:inline-block;padding:4px 9px;border-radius:99px;background:#263244;color:#d9e4f4;font-size:.82rem}.stat{font-size:1.5rem;font-weight:800;color:var(--orange)}#message{overflow-wrap:anywhere;white-space:pre-wrap}.notice{border-left:3px solid var(--orange);padding:10px 12px;background:#211d17;border-radius:5px}.task button{margin-top:12px}.section-title{margin-bottom:8px}
 </style>
 </head>
 <body><main>
@@ -23,12 +23,13 @@ input,textarea,select,button{width:100%;padding:13px;border-radius:10px;border:1
 <p id="message" class="muted" role="status">Use an account you control. Never share your password or wallet recovery phrase.</p>
 </section>
 <section class="hidden" id="dashboard">
-<section class="card"><div class="grid"><div><h2 class="section-title">Your dashboard</h2><p id="who" class="muted"></p></div><div><button class="secondary" id="signout">Sign out</button></div></div>
+<nav class="tabbar" aria-label="App navigation"><button type="button" class="active" data-tab="overview">Home</button><button type="button" data-tab="tasks-panel">Tasks</button><button type="button" data-tab="rewards-panel">Rewards</button><button type="button" data-tab="withdrawals-panel">Withdraw</button></nav>
+<section class="card tab-panel active" id="overview"><div class="grid"><div><h2 class="section-title">Your dashboard</h2><p id="who" class="muted"></p></div><div><button class="secondary" id="signout">Sign out</button></div></div>
 <div class="grid"><div><p class="muted">Available rewards</p><div class="stat" id="balance">— sats</div></div><div><p class="muted">Pending review</p><div class="stat" id="pending">—</div></div></div>
 <p id="dashmessage" class="muted" role="status"></p></section>
-<section class="card"><h2>Available tasks</h2><p class="muted">Open a task, follow its instructions, and submit evidence for review.</p><div id="tasks">Loading tasks…</div></section>
-<section class="card"><h2>Your reward history</h2><div id="rewards" class="muted">Loading rewards…</div></section>
-<section class="card"><h2>Withdrawal requests</h2><p class="muted">Choose an available reward below to request a Bitcoin payout review.</p><div id="withdrawals" class="muted">Loading requests…</div></section>
+<section class="card tab-panel" id="tasks-panel"><h2>Available tasks</h2><p class="muted">Open a task, follow its instructions, and submit evidence for review.</p><div id="tasks">Loading tasks…</div></section>
+<section class="card tab-panel" id="rewards-panel"><h2>Your reward history</h2><div id="rewards" class="muted">Loading rewards…</div></section>
+<section class="card tab-panel" id="withdrawals-panel"><h2>Withdrawal requests</h2><p class="muted">Choose an available reward below to request a Bitcoin payout review.</p><div id="withdrawals" class="muted">Loading requests…</div></section>
 </section>
 <footer><p><small>BTC Rewards · Withdrawals require manual review. This app does not automatically sign or broadcast Bitcoin transactions. Never pay a fee to “unlock” a reward.</small></p></footer>
 </main>
@@ -37,6 +38,8 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.0';
 const supabase=createClient('https://foaxqdjfwnmipitcnnnn.supabase.co','sb_publishable_fHDNGd_OrZEF9uPMlU8yWw_yLJbkxrE');
 const el=id=>document.getElementById(id); let busy=false;
 function message(t){el('message').textContent=t}
+function showTab(id){document.querySelectorAll('.tab-panel').forEach(p=>p.classList.toggle('active',p.id===id));document.querySelectorAll('[data-tab]').forEach(b=>b.classList.toggle('active',b.dataset.tab===id));}
+document.querySelectorAll('[data-tab]').forEach(b=>b.addEventListener('click',()=>showTab(b.dataset.tab)));
 function node(tag,text,cls){const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(cls)n.className=cls;return n}
 function sats(n){return Number(n||0).toLocaleString()+' sats'}
 function errorText(e){return e?.message||e?.error||String(e||'Unknown error')}
