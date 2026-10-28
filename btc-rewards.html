@@ -92,9 +92,40 @@ async function loadWithdrawals(){
  if(!data?.length){host.append(node('p','No withdrawal requests yet.','muted'));return}
  for(const w of data){const c=node('article',undefined,'task');c.append(node('strong',sats(w.amount_sats)+' · '+(w.status||'unknown').replaceAll('_',' ')),node('p',(w.destination_type||'payout')+' · '+new Date(w.requested_at).toLocaleString(),'muted'));if(w.review_note)c.append(node('p','Review note: '+w.review_note,'muted'));if(w.payout_reference)c.append(node('p','Payout reference: '+w.payout_reference,'muted'));host.append(c)}
 }
-el('anonymous').onclick=async()=>{const b=el('anonymous');b.disabled=true;message('Starting anonymous guest session…');try{const{data,error}=await supabase.auth.signInAnonymously();if(error)throw error;if(!data.session)throw new Error('No guest session was created.');message('Guest session ready.');await refresh()}catch(e){message('Anonymous sign-in failed: '+errorText(e)+'. Anonymous sign-in may need to be enabled in Supabase Authentication settings.')}finally{b.disabled=false}};
-el('signin').onclick=async()=>{message('Signing in…');const{error}=await supabase.auth.signInWithPassword({email:el('email').value.trim(),password:el('password').value});if(error){message(error.message);return}message('Signed in.');await refresh()};
-el('signup').onclick=async()=>{message('Creating account…');const{data,error}=await supabase.auth.signUp({email:el('email').value.trim(),password:el('password').value});if(error){message(error.message);return}message(data.session?'Account created.':'Account created. Check your email for a confirmation link, then sign in.');await refresh()};
+async function runAuthAction(buttonId, label, action) {
+ const button=el(buttonId); button.disabled=true; message(label);
+ try {
+  const result=await action();
+  if(result?.error) throw result.error;
+  return result;
+ } catch(e) {
+  message(label.replace(/…$/, '')+' failed: '+errorText(e));
+  return null;
+ } finally { button.disabled=false; }
+}
+el('anonymous').onclick=async()=>{
+ const result=await runAuthAction('anonymous','Starting anonymous guest session…',async()=>{
+  const {data,error}=await supabase.auth.signInAnonymously();
+  if(error) throw error;
+  if(!data.session) throw new Error('Supabase returned no guest session.');
+  return {data};
+ });
+ if(!result)return;
+ message('Guest session ready. You can now use Home, Tasks, Rewards and Withdraw.');
+ await refresh();
+};
+el('signin').onclick=async()=>{
+ const result=await runAuthAction('signin','Signing in…',()=>supabase.auth.signInWithPassword({email:el('email').value.trim(),password:el('password').value}));
+ if(!result)return;
+ message('Signed in.'); await refresh();
+};
+el('signup').onclick=async()=>{
+ const result=await runAuthAction('signup','Creating account…',()=>supabase.auth.signUp({email:el('email').value.trim(),password:el('password').value}));
+ if(!result)return;
+ const data=result.data;
+ message(data?.session?'Account created.':'Account created. Check your email for a confirmation link, then sign in.');
+ await refresh();
+};
 el('signout').onclick=async()=>{await supabase.auth.signOut();await refresh()};
 supabase.auth.onAuthStateChange(()=>{setTimeout(()=>refresh().catch(e=>el('dashmessage').textContent=errorText(e)),0)});
 refresh().catch(e=>message('App could not start: '+errorText(e)));
